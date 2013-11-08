@@ -1,10 +1,14 @@
 # Object files
 *.o
-*.ko
+# Compiled libraries
+#*.a
+*.suo
+*.sdf
+*.opensdf
 
 # Libraries
 *.lib
-*.a
+*.map
 
 # Shared objects (inc. Windows DLLs)
 *.dll
@@ -12,7 +16,19 @@
 *.so.*
 *.dylib
 
+# vs Crap
+*.vssettings
+
 # Executables
 *.exe
 *.out
 *.app
+*.elf
+*.img
+*.tlog
+*.lastbuildstate
+*.obj
+*.ilk
+*.idb
+*.pdb
+*.log
