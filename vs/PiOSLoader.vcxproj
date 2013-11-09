@@ -39,7 +39,7 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>D:\Simon\Dev\Git\PiOSLoader\include;$(IncludePath)</IncludePath>
+    <IncludePath>F:\git\PiOSLoader\include;D:\Simon\Dev\Git\PiOSLoader\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
