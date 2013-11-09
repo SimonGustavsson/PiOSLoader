@@ -1,4 +1,19 @@
-#include "uart.h"#include "interrupt.h"// In bytes#define KERNEL_MAX_SIZE (1024 * 1024)extern void enable_irq(void);volatile unsigned int gSizeBytesReceived;volatile unsigned int gKernelSize;volatile unsigned int gKernelBytesReceived;char gBuffer[KERNEL_MAX_SIZE];volatile unsigned int gUserConnected;unsigned int gBufferIndex;static inline void *memcpy(void *dest, const void *src, unsigned int bytesToCopy)
+#include "uart.h"
+#include "interrupt.h"
+
+// In bytes
+#define KERNEL_MAX_SIZE (1024 * 1024)
+
+extern void enable_irq(void);
+
+volatile unsigned int gSizeBytesReceived;
+volatile unsigned int gKernelSize;
+volatile unsigned int gKernelBytesReceived;
+char gBuffer[KERNEL_MAX_SIZE];
+volatile unsigned int gUserConnected;
+unsigned int gBufferIndex;
+
+static inline void *memcpy(void *dest, const void *src, unsigned int bytesToCopy)
 {
 	char *s = (char *)src;
 	char *d = (char *)dest;
@@ -8,7 +23,9 @@
 		bytesToCopy--;
 	}
 	return dest;
-}void c_irq_handler(void)
+}
+
+void c_irq_handler(void)
 {
 	gBuffer[gBufferIndex] = uart_getc();
 
@@ -65,7 +82,13 @@ void cmain(void)
 	for (i = 0; i < 1024 * 1024; i++)
 		gBuffer[i] = 0;
 
-	uart_init();	uart_irpt_enable();	arm_interrupt_init();	arm_irq_disableall();	arm_irq_enable(interrupt_source_uart);	enable_irq();
+	uart_init();
+
+	uart_irpt_enable();
+	arm_interrupt_init();
+	arm_irq_disableall();
+	arm_irq_enable(interrupt_source_uart);
+	enable_irq();
 
 	// Wait for user to connect
 	while (!gUserConnected) { /* Do Nothing */ }
