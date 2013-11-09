@@ -32,3 +32,6 @@
 *.idb
 *.pdb
 *.log
+bin/
+obj/
+*.user
