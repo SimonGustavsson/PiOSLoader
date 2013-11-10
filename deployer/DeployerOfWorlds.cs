@@ -11,15 +11,13 @@ namespace PiOSDeployer
 {
     class DeployerOfWorlds
     {
-        private const string WINDOW_TITLE = "PiOS Deployer";
         private SerialPort mSerial;
-        private bool mSizeConfirmationRecevied = false;
-        byte[] mSizeConfirmation = new byte[4];
-        private int mSizeConfirmationIndex = 0;
-        private byte[] mKernelBytes = new byte[20];
         private int mKernelByteIndex = 0;
         private byte[] mKernelBuffer;
         private int mKernelSize = 0;
+        private byte[] mReceiveBuffer = new byte[40];
+        private int mReceiveIndex = 0;
+        private bool mKernelLoaded;
 
         public void Run(string pathToKernelImage)
         {
@@ -29,12 +27,7 @@ namespace PiOSDeployer
                 return;
             }
 
-            Console.Title = WINDOW_TITLE;
-
             InitializeSerialPort();
-
-            // Tell the Pi we've connected by sending a byte
-            mSerial.Write(new byte[] { 1 }, 0, 1);
             
             try
             {
@@ -56,7 +49,7 @@ namespace PiOSDeployer
             // Write Size, then the data
             mSerial.Write(BitConverter.GetBytes(mKernelSize), 0, 4);
 
-            Console.WriteLine("Kernel size sent!");
+            Console.Write("Kernel size sent, waiting for confirmation...");
 
             InifiniteCommandLoop();
         }
@@ -78,26 +71,41 @@ namespace PiOSDeployer
             mSerial = new SerialPort("COM" + port.ToString(), 115200, Parity.None, 8, StopBits.One);
             mSerial.DataReceived += (s, e) =>
             {
-                if (mSizeConfirmationIndex != 3)
+                var bytesToRead = mSerial.BytesToRead; // Decrements when reading, so freeze it
+                if (mKernelLoaded)
                 {
-                    // We're receiving size
-                    for (int i = 0; i < mSerial.BytesToRead && mSizeConfirmationIndex < 4; i++)
-                    {
-                        mSizeConfirmation[mSizeConfirmationIndex++] = (byte)mSerial.ReadByte();
-                    }
+                    for (var i = 0; i < bytesToRead; i++)
+                        Console.Write((char)mSerial.ReadByte());
 
-                    if(mSizeConfirmationIndex == 3)
-                    {
-                        // We've received confirmation of the size of the kernel, send the kernel
-                        mSerial.Write(mKernelBuffer, 0, mKernelSize);
-
-                        Console.WriteLine("Kernel sent to the Pi!");
-                    }
+                    return;
                 }
-                else
+
+                for (var i = 0; i < bytesToRead; i++)
+                    mReceiveBuffer[mReceiveIndex++] = (byte)mSerial.ReadByte();
+                
+                // Was the last one a 0 indicating EOF
+                if (mReceiveBuffer[mReceiveIndex - 1] == 0)
                 {
-                    for (var i = 0; i < mSerial.BytesToRead; i++)
-                        mKernelBytes[mKernelByteIndex++] = (byte)mSerial.ReadByte();
+                    var receivedString = Encoding.UTF8.GetString(mReceiveBuffer, 0, mReceiveIndex - 1); // (Don't read \0)
+                    switch (receivedString.ToUpper())
+                    {
+                        case "SIZEOK":
+                            Console.Write(" Done!{0}Sending kernel...", Environment.NewLine);
+
+                            mSerial.Write(mKernelBuffer, 0, mKernelSize);
+
+                            Console.Write(" Done!" + Environment.NewLine);
+                            break;
+                        case "BADSIZE":
+                            Console.WriteLine("Kernel is too big. :(");
+                            break;
+                        case "KRNOK":
+                            mKernelLoaded = true;
+                            Console.WriteLine("Kernel loaded, press any key to continue.");
+                            break;
+                    }
+                    mReceiveIndex = 0;
+                    Array.Clear(mReceiveBuffer, 0, 40);
                 }
             };
 
@@ -115,7 +123,7 @@ namespace PiOSDeployer
 
                     mSerial.Write(bytes, 0, bytes.Length);
 
-                    if (command.Equals("x", StringComparison.InvariantCultureIgnoreCase))
+                    if (command.Equals("exit", StringComparison.InvariantCultureIgnoreCase))
                     {
                         break;
                     }
@@ -129,7 +137,7 @@ namespace PiOSDeployer
             {
                 var caption = obj["Caption"] as string;
 
-                if (caption.IndexOf("Prolific") > -1)
+                if (caption!= null && caption.IndexOf("Prolific") > -1)
                 {
                     var comPort = caption.Substring(caption.IndexOf("COM") + 3, 1);
                     int com;
