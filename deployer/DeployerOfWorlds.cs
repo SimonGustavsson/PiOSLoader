@@ -116,18 +116,12 @@ namespace PiOSDeployer
         {
             while (true)
             {
-                var command = Console.ReadLine();
-                if (!String.IsNullOrEmpty(command))
-                {
-                    var bytes = System.Text.Encoding.UTF8.GetBytes(command);
+                var key = Console.ReadKey(true);
 
-                    mSerial.Write(bytes, 0, bytes.Length);
+                if(key.Key == ConsoleKey.Escape)
+                    break;
 
-                    if (command.Equals("exit", StringComparison.InvariantCultureIgnoreCase))
-                    {
-                        break;
-                    }
-                }
+                mSerial.Write(new byte[] { (byte)key.KeyChar }, 0, 1);
             }
         }
 
