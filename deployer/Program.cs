@@ -10,13 +10,13 @@ namespace PiOSDeployer
         {
             Console.Title = WINDOW_TITLE;
 
-            if(args.Length < 2 && !System.Diagnostics.Debugger.IsAttached)
+            if(args.Length < 1)
             {
                 Console.WriteLine("Too few arguments, at least tell me which kernel to deploy, man!");
                 return;
             }
 
-            new DeployerOfWorlds().Run(args[1]);
+            new DeployerOfWorlds().Run(args[0]);
         }
     }
 }

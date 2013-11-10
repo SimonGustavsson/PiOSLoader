@@ -101,7 +101,7 @@ namespace PiOSDeployer
                             break;
                         case "KRNOK":
                             mKernelLoaded = true;
-                            Console.WriteLine("Kernel loaded, press any key to continue.");
+                            Console.WriteLine("Kernel accepted, booting...");
                             break;
                     }
                     mReceiveIndex = 0;
