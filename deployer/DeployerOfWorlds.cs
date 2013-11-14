@@ -1,24 +1,19 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.IO.Ports;
-using System.Linq;
 using System.Management;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace PiOSDeployer
 {
-    class DeployerOfWorlds
+    internal class DeployerOfWorlds
     {
         private SerialPort mSerial;
-        private int mKernelByteIndex = 0;
         private byte[] mKernelBuffer;
         private int mKernelSize = 0;
-        private byte[] mReceiveBuffer = new byte[40];
+        private byte[] mReceiveBuffer = new byte[1024];
         private int mReceiveIndex = 0;
-        private bool mKernelLoaded;
-
+        
         public void Run(string pathToKernelImage)
         {
             if (!File.Exists(pathToKernelImage))
@@ -26,6 +21,8 @@ namespace PiOSDeployer
                 Console.WriteLine("Who're you trying to fool!? There's no kernel there!");
                 return;
             }
+
+            NativeMethods.SetConsoleCtrlHandler(new HandlerRoutine(ConsoleCtrlCheck), true);
 
             InitializeSerialPort();
             
@@ -72,18 +69,12 @@ namespace PiOSDeployer
             mSerial.DataReceived += (s, e) =>
             {
                 var bytesToRead = mSerial.BytesToRead; // Decrements when reading, so freeze it
-                if (mKernelLoaded)
-                {
-                    for (var i = 0; i < bytesToRead; i++)
-                        Console.Write((char)mSerial.ReadByte());
-
-                    return;
-                }
-
+               
                 for (var i = 0; i < bytesToRead; i++)
                     mReceiveBuffer[mReceiveIndex++] = (byte)mSerial.ReadByte();
-                
+
                 // Was the last one a 0 indicating EOF
+                // NOTE: This means the kernel is currently not allowed to send data!
                 if (mReceiveBuffer[mReceiveIndex - 1] == 0)
                 {
                     var receivedString = Encoding.UTF8.GetString(mReceiveBuffer, 0, mReceiveIndex - 1); // (Don't read \0)
@@ -100,10 +91,19 @@ namespace PiOSDeployer
                             Console.WriteLine("Kernel is too big. :(");
                             break;
                         case "KRNOK":
-                            mKernelLoaded = true;
                             Console.WriteLine("Kernel accepted, booting...");
                             break;
+                        case "STRT":
+                            Console.WriteLine("Bootloader restarted: Sending kernelsize");
+
+                            // Resend the kernel size (kernel is sent in receive handler)
+                            mSerial.Write(BitConverter.GetBytes(mKernelSize), 0, 4);
+                            break;
+                        default:
+                            Console.Write(receivedString);
+                            break;
                     }
+
                     mReceiveIndex = 0;
                     Array.Clear(mReceiveBuffer, 0, 40);
                 }
@@ -143,6 +143,18 @@ namespace PiOSDeployer
             }
 
             return -1;
+        }
+
+        private bool ConsoleCtrlCheck(CtrlTypes ctrlType)
+        {
+            if (ctrlType == CtrlTypes.CTRL_CLOSE_EVENT)
+            {
+                // Tell PiOS to restart so that we can reconnect to the bootloader
+                mSerial.Write(new byte[] { (byte)'x', }, 0, 1);
+            }
+
+            // Put your own handler here
+            return true;
         }
     }
 }

@@ -64,7 +64,8 @@ void cmain(void)
 	arm_irq_enable(interrupt_source_uart);
 	enable_irq();
 
-	uart_puts("PiOS Loader started, waiting for kernel.\n");
+	// Tell the deployer we want a kernel
+	uart_puts("STRT");
 
 	// Wait for user to connect
 	while (!gKernelReceived) { /* Wait */ }
