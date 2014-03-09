@@ -16,7 +16,6 @@ namespace PiOSDeployer
         private byte[] mReceiveBuffer = new byte[2048];
         private int mReceiveIndex = 0;
         private string mReceivedString = String.Empty;
-        private int mPartialReceiveIndex = 0;
 
         public void Run(string pathToKernelImage)
         {

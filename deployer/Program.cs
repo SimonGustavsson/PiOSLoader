@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 
 namespace PiOSDeployer
 {
@@ -15,6 +16,8 @@ namespace PiOSDeployer
                 Console.WriteLine("Too few arguments, at least tell me which kernel to deploy, man!");
                 return;
             }
+
+            Process.GetCurrentProcess().DieWithParent();
 
             new DeployerOfWorlds().Run(args[0]);
         }
