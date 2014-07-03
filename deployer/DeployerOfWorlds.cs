@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.IO.Ports;
 using System.Management;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace PiOSDeployer
@@ -16,6 +17,7 @@ namespace PiOSDeployer
         private byte[] mReceiveBuffer = new byte[2048];
         private int mReceiveIndex = 0;
         private string mReceivedString = String.Empty;
+        private bool mSendingKernel = false;
 
         public void Run(string pathToKernelImage)
         {
@@ -47,6 +49,8 @@ namespace PiOSDeployer
                 Console.WriteLine("Could not read kernel from disk, {0}", e.Message);
             }
 
+            Console.WriteLine("Sending file {0} ({1} bytes)", pathToKernelImage, mKernelSize);
+
             // Write Size, then the data
             this.Send(BitConverter.GetBytes(mKernelSize));
 
@@ -73,9 +77,13 @@ namespace PiOSDeployer
             {
                 mSerial = new SerialPort("COM" + port.ToString(), 115200, Parity.None, 8, StopBits.One);
             }
-            catch(IOException ex)
+            catch(Exception)
             {
-                Console.WriteLine("Failed to create serial port: {0}", ex.Message);
+                Console.WriteLine("Failed to create serial port. Pi connected to the correct USB port?");
+
+                Console.WriteLine("Press any key to exit...");
+
+                Console.ReadLine();
             }
             
             mSerial.DataReceived += Serial_DataReceived;
@@ -125,7 +133,11 @@ namespace PiOSDeployer
                 case "SIZEOK":
                     Console.Write(" Done!{0}Sending kernel...", Environment.NewLine);
 
+                    mSendingKernel = true;
+
                     this.Send(mKernelBuffer); // Do we need to pass in kernel size?
+
+                    mSendingKernel = false;
 
                     Console.Write(" Done!" + Environment.NewLine);
                     break;
@@ -158,6 +170,9 @@ namespace PiOSDeployer
 
                 if (key.Key == ConsoleKey.Escape)
                     break;
+
+                if (!this.ShouldSendKey(key))
+                    continue;
 
                 this.Send(new byte[] { (byte)key.KeyChar });
             }
@@ -209,6 +224,12 @@ namespace PiOSDeployer
             {
                 Console.WriteLine("Failed to write to serial, {0}.", ex.Message);
             }
+        }
+
+        private bool ShouldSendKey(ConsoleKeyInfo keyInfo)
+        {
+            // Only send printable keys
+            return !mSendingKernel && keyInfo.KeyChar != 0;
         }
     }
 }
