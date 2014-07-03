@@ -43,7 +43,7 @@ reset:
 	;@ SVC
 	mov r0, #0xD3
 	msr cpsr_c, r0
-	mov sp, #0x80000
+	mov sp, #0x7000
  
 	;@ Clear out bss.
 	ldr	r4, =_bss_start

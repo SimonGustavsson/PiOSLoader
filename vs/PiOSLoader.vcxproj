@@ -39,7 +39,7 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>F:\git\PiOSLoader\include;D:\Simon\Dev\Git\PiOSLoader\include;$(IncludePath)</IncludePath>
+    <IncludePath>C:\git\PiOSLoader\include;F:\git\PiOSLoader\include;D:\Simon\Dev\Git\PiOSLoader\include;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -66,14 +66,19 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\include\elf.h" />
     <ClInclude Include="..\include\gpio.h" />
     <ClInclude Include="..\include\interrupt.h" />
+    <ClInclude Include="..\include\memory.h" />
     <ClInclude Include="..\include\uart.h" />
+    <ClInclude Include="..\include\utility.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\source\elf.c" />
     <ClCompile Include="..\source\gpio.c" />
     <ClCompile Include="..\source\interrupt.c" />
     <ClCompile Include="..\source\main.c" />
+    <ClCompile Include="..\source\memory.c" />
     <ClCompile Include="..\source\uart.c" />
   </ItemGroup>
   <ItemGroup>

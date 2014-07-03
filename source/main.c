@@ -1,8 +1,10 @@
 #include "uart.h"
 #include "interrupt.h"
+#include "memory.h"
+#include "elf.h"
+#include "utility.h"
 
 // In bytes
-#define KERNEL_MAX_SIZE 512000 // (Bytes)
 
 extern void enable_irq(void);
 
@@ -10,18 +12,6 @@ volatile unsigned int gKernelSize;
 char gBuffer[KERNEL_MAX_SIZE];
 unsigned int gBufferIndex;
 volatile unsigned int gKernelReceived;
-
-static inline void *memcpy(void *dest, const void *src, unsigned int bytesToCopy)
-{
-	char *s = (char *)src;
-	char *d = (char *)dest;
-	while (bytesToCopy > 0)
-	{
-		*d++ = *s++;
-		bytesToCopy--;
-	}
-	return dest;
-}
 
 void c_irq_handler(void)
 {
@@ -46,6 +36,34 @@ void c_irq_handler(void)
 	gBufferIndex++;
 }
 
+void copy_func_info(char* dest, func_info* info, unsigned int info_len)
+{
+    // First things first, write the number of functions, null terminated integer
+    *dest++ = (info_len >> 24) & 0xFF;
+    *dest++ = (info_len >> 16) & 0xFF;
+    *dest++ = (info_len >> 8) & 0xFF;
+    *dest++ = (info_len) & 0xFF;
+    *dest++ = 0;
+
+    unsigned int i;
+    for (i = 0; i < info_len; i++)
+    {
+        func_info* cur = &info[i];
+        
+        // Copy null character as well
+        int nameLen = my_strlen(cur->name);
+        memcpy(dest, cur->name, nameLen);
+
+        dest[nameLen] = 0;
+        dest += nameLen + 1;
+
+        *dest++ = (cur->address >> 24) & 0xFF;
+        *dest++ = (cur->address >> 16) & 0xFF;
+        *dest++ = (cur->address >> 8) & 0xFF;
+        *dest++ = (cur->address >> 0) & 0xFF;
+    }
+}
+
 void cmain(void)
 {
 	// Zero out the global vars, because I don't trust BSS. <Paranoia />
@@ -64,21 +82,58 @@ void cmain(void)
 	arm_irq_enable(interrupt_source_uart);
 	enable_irq();
 
+    Pallocator_Initialize();
+
 	// Tell the deployer we want a kernel
 	uart_puts("STRT");
 
 	// Wait for user to connect
 	while (!gKernelReceived) { /* Wait */ }
 	
-	uart_puts("KRNOK");
+	uart_puts("KRNOK\n");
 
-	// Move kernel to 0x8000
-	char* dest = (char*)(0x8000);
-	memcpy(dest, &gBuffer[4], gKernelSize + 1);
+    int* testAlloc = (int*)palloc(4);
+
+    char testBuf[9];
+    itoa((int)testAlloc, testBuf);
+
+    // Note: Size of kernel is in the first 4 bytes of the buffer, so skip those
+    func_info* funcs;
+    int funcsLen = elf_get_func_info(&gBuffer[4], gKernelSize, &funcs);
+
+    if (funcsLen > 0)
+    {
+        uart_puts("Bootloader: Function Length: ");
+        char lenBuf[9];
+        itoa(funcsLen, lenBuf);
+        uart_puts(lenBuf);
+        uart_puts("\n");
+
+        int elfEnd = elf_load(&gBuffer[4], gKernelSize);
+
+        char* blob = (char*)(elfEnd);
+
+        char buf[9];
+        itoa((int)blob, buf);
+
+        uart_puts("Writing symbols to: ");
+        uart_puts(buf);
+        uart_puts("\n");
+
+        copy_func_info(blob, funcs, funcsLen);
+    }
+    else
+    {
+        uart_puts("Invalid ELF\n");
+    }
+
+    uart_puts("Elf loaded, jumping to kernel (Bye, bootloader...)\n");
 
 	// Jump into the new shiny kernel
 	void(*start)(void) = (void(*)())(0x8000);
 	start();
+
+    uart_puts("\n\nBootloader halting * * *\n\n");
 
 	while (1);
 }
