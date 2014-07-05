@@ -1,4 +1,3 @@
-
 .section ".text.boot"
 .globl Start
 Start:
@@ -20,6 +19,19 @@ irq_handler:        .word irq
 fiq_handler:        .word hang
 
 reset:
+    
+	;@ Setup the stacks
+	;@ IRQ
+	mov r3, #0xD2
+	msr cpsr_c, r3
+	mov sp, #0x8000
+
+	;@ SVC
+	mov r3, #0xD3
+	msr cpsr_c, r3
+	mov sp, #0x7000
+
+    push {r0, r1, r2}
 
 	;@ Move interrupt vector to 0x0000
     mov r0,#0x8000
@@ -28,22 +40,6 @@ reset:
     stmia r1!,{r2,r3,r4,r5,r6,r7,r8,r9}
     ldmia r0!,{r2,r3,r4,r5,r6,r7,r8,r9}
     stmia r1!,{r2,r3,r4,r5,r6,r7,r8,r9}
-
-	;@ Setup the stacks
-	;@ IRQ
-	mov r0, #0xD2
-	msr cpsr_c, r0
-	mov sp, #0x8000
-
-	;@ FIQ
-	mov r0, #0xD1
-	msr cpsr_c, r0
-	mov sp, #0x4000
-
-	;@ SVC
-	mov r0, #0xD3
-	msr cpsr_c, r0
-	mov sp, #0x7000
  
 	;@ Clear out bss.
 	ldr	r4, =_bss_start
@@ -62,8 +58,9 @@ reset:
 2:
 	cmp	r4, r9
 	blo	1b
- 
-	;@ ~~~~~~~~~ Call cmain ~~~~~~~~~~~
+
+    pop {r0, r1, r2}
+
 	ldr	r3, =cmain
 	blx	r3
  

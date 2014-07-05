@@ -64,7 +64,7 @@ void copy_func_info(char* dest, func_info* info, unsigned int info_len)
     }
 }
 
-void cmain(void)
+void cmain(int r0, int machineType, int atagsPa)
 {
 	// Zero out the global vars, because I don't trust BSS. <Paranoia />
 	unsigned int i;
@@ -101,6 +101,7 @@ void cmain(void)
     func_info* funcs;
     int funcsLen = elf_get_func_info(&gBuffer[4], gKernelSize, &funcs);
 
+    int elfEnd = 0;
     if (funcsLen > 0)
     {
         uart_puts("Bootloader: Function Length: ");
@@ -109,7 +110,7 @@ void cmain(void)
         uart_puts(lenBuf);
         uart_puts("\n");
 
-        int elfEnd = elf_load(&gBuffer[4], gKernelSize);
+        elfEnd = elf_load(&gBuffer[4], gKernelSize);
 
         char* blob = (char*)(elfEnd);
 
@@ -128,10 +129,10 @@ void cmain(void)
     }
 
     uart_puts("Elf loaded, jumping to kernel (Bye, bootloader...)\n");
-
-	// Jump into the new shiny kernel
-	void(*start)(void) = (void(*)())(0x8000);
-	start();
+	
+    // Jump into the new shiny kernel
+	void(*start)(int, int, int) = (void(*)(int, int, int))(0x8000);
+    start(machineType, atagsPa, elfEnd);
 
     uart_puts("\n\nBootloader halting * * *\n\n");
 
