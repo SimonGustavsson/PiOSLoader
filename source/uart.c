@@ -29,7 +29,7 @@ void uart_init() {
 	gUart->ibrd = 1;
     gUart->fbrd = 5;
 
-	// 8 bit data transmissio (1 stop bit, no parity). (Note: Not enabling fifo)
+	// 8 bit data transmission (1 stop bit, no parity). (Note: Not enabling fifo)
 	gUart->lcrh = (1 << 5) | (1 << 6);
 
 	// Mask all interrupts.
