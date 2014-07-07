@@ -135,11 +135,16 @@ namespace PiOSDeployer
 
                     mSendingKernel = true;
 
+                    var watch = new Stopwatch();
+                    watch.Start();
+
                     this.Send(mKernelBuffer); // Do we need to pass in kernel size?
+                    
+                    watch.Stop();
 
                     mSendingKernel = false;
-
-                    Console.Write(" Done!" + Environment.NewLine);
+                    
+                    Console.Write(" Done in {0} ms!" + Environment.NewLine, watch.ElapsedMilliseconds);
                     break;
                 case "BADSIZE": Console.WriteLine("Kernel is too big. :("); break;
                 case "KRNOK": Console.WriteLine("Kernel accepted, booting..."); break;
