@@ -19,7 +19,7 @@ namespace PiOSDeployer
         private string mReceivedString = String.Empty;
         private bool mSendingKernel = false;
 
-        public void Run(string pathToKernelImage)
+        public void Run(string pathToKernelImage, int baudRate)
         {
             if (!File.Exists(pathToKernelImage))
             {
@@ -29,7 +29,7 @@ namespace PiOSDeployer
 
             NativeMethods.SetConsoleCtrlHandler(new HandlerRoutine(ConsoleCtrlCheck), true);
 
-            if (!InitializeSerialPort())
+            if (!InitializeSerialPort(baudRate))
                 return;
 
             try
@@ -49,7 +49,7 @@ namespace PiOSDeployer
                 Console.WriteLine("Could not read kernel from disk, {0}", e.Message);
             }
 
-            Console.WriteLine("Sending file {0} ({1} bytes)", pathToKernelImage, mKernelSize);
+            Console.WriteLine("Sending file {0} ({1} bytes) at {2} baud.", pathToKernelImage, mKernelSize, baudRate);
 
             // Write Size, then the data
             this.Send(BitConverter.GetBytes(mKernelSize));
@@ -59,7 +59,7 @@ namespace PiOSDeployer
             InifiniteCommandLoop();
         }
 
-        private bool InitializeSerialPort()
+        private bool InitializeSerialPort(int baudRate)
         {
             int port = -1;
             while (true)
@@ -75,7 +75,7 @@ namespace PiOSDeployer
 
             try
             {
-                mSerial = new SerialPort("COM" + port.ToString(), 115200, Parity.None, 8, StopBits.One);
+                mSerial = new SerialPort("COM" + port.ToString(), baudRate, Parity.None, 8, StopBits.One);
             }
             catch(Exception)
             {
