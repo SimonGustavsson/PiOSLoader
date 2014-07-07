@@ -90,7 +90,7 @@ void cmain(int r0, int machineType, int atagsPa)
 	// Wait for user to connect
 	while (!gKernelReceived) { /* Wait */ }
 	
-	uart_puts("KRNOK\n");
+	uart_puts("KRNOK");
 
     int* testAlloc = (int*)palloc(4);
 
@@ -104,22 +104,9 @@ void cmain(int r0, int machineType, int atagsPa)
     int elfEnd = 0;
     if (funcsLen > 0)
     {
-        uart_puts("Bootloader: Function Length: ");
-        char lenBuf[9];
-        itoa(funcsLen, lenBuf);
-        uart_puts(lenBuf);
-        uart_puts("\n");
-
         elfEnd = elf_load(&gBuffer[4], gKernelSize);
 
         char* blob = (char*)(elfEnd);
-
-        char buf[9];
-        itoa((int)blob, buf);
-
-        uart_puts("Writing symbols to: ");
-        uart_puts(buf);
-        uart_puts("\n");
 
         copy_func_info(blob, funcs, funcsLen);
     }
@@ -128,8 +115,8 @@ void cmain(int r0, int machineType, int atagsPa)
         uart_puts("Invalid ELF\n");
     }
 
-    uart_puts("Elf loaded, jumping to kernel (Bye, bootloader...)\n");
-	
+    uart_puts("Bootloader: Successfully loaded kernel, booting...\n");
+
     // Jump into the new shiny kernel
 	void(*start)(int, int, int) = (void(*)(int, int, int))(0x8000);
     start(machineType, atagsPa, elfEnd);
