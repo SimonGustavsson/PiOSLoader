@@ -30,8 +30,12 @@ namespace PiOSDeployer
             NativeMethods.SetConsoleCtrlHandler(new HandlerRoutine(ConsoleCtrlCheck), true);
 
             if (!InitializeSerialPort(baudRate))
-                return;
+            {
+                Console.WriteLine("Press any key to exit...\n");
+                Console.ReadLine();
 
+                return;
+            }
             try
             {
                 // Send kernel size
@@ -91,6 +95,11 @@ namespace PiOSDeployer
             try
             {
                 mSerial.Open();
+            }
+                catch(IOException)
+            {
+                Console.WriteLine("Failed to open serial port, is the driver installed?");
+                return false;
             }
             catch(UnauthorizedAccessException)
             {
